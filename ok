@@ -1,0 +1,35 @@
+Implement HAR parsing with the following logic:
+
+1. Parse HAR entries and extract request/response data.
+2. Sort all requests by startedDateTime.
+3. Group requests into transactions:
+   - If gap between requests >= 15 seconds → new transaction
+   - Otherwise → same transaction
+
+4. Assign transaction names based on primary API in the group.
+
+5. Filter out non-business requests:
+   - Ignore static resources (images, css, js)
+   - Ignore analytics/tracking calls
+   - DO NOT remove any uncertain or business-related APIs
+
+6. Detect polling requests:
+   - Same API repeated multiple times
+   - Wrap them in a loop (max 20 iterations)
+   - Maintain original interval between calls
+   - Exit loop if response contains success/completion keywords
+
+7. Build structured flow of transactions and steps.
+
+8. Generate Python script:
+   - Sequential execution
+   - Include transaction logs
+   - Include polling loops
+   - No correlation or parameterization for now
+
+IMPORTANT:
+- Do not remove any potential business API
+- If unsure, retain the request
+- Preserve execution order exactly
+
+If any part is missing, implement accordingly.
