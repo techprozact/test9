@@ -1,0 +1,325 @@
+Build a production-grade module named **"Auto Flow Recorder Engine"** inside the existing dashboard under a left navigation tab called **"Auto Recorder"**.
+
+This system must be deterministic, rule-based, and interactive. It must NOT guess or hallucinate.
+
+---
+
+## 🎯 OBJECTIVE
+
+Allow user to:
+
+1. Provide:
+
+   * URL
+   * Credentials
+   * Navigation steps (text or file)
+
+2. System should:
+
+   * Open browser
+   * Execute steps one-by-one
+   * Validate each step BEFORE proceeding
+   * Resolve ambiguity interactively
+   * Complete flow once successfully
+   * THEN start recording
+   * Store clean structured network data
+
+---
+
+## 🧱 SYSTEM ARCHITECTURE
+
+Frontend: React
+Backend: Python (FastAPI)
+Automation: Playwright
+Communication: WebSocket (bi-directional)
+
+---
+
+## 📥 INPUT CONTRACT (API)
+
+POST /start-auto-flow
+
+Request:
+{
+"url": "https://app.com",
+"credentials": {
+"username": "user",
+"password": "pass"
+},
+"steps": [
+"click login",
+"enter username",
+"enter password",
+"submit",
+"click balance",
+"click fund transfer",
+"logout"
+]
+}
+
+---
+
+## 🔄 EXECUTION STATE MACHINE (MANDATORY)
+
+Define strict states:
+
+IDLE
+→ STARTED
+→ STEP_EXECUTION
+→ AMBIGUITY
+→ USER_INPUT_REQUIRED
+→ STEP_RESOLVED
+→ FLOW_VALIDATED
+→ RECORDING
+→ COMPLETED
+→ ERROR
+
+System must ALWAYS be in one of these states.
+
+---
+
+🧠 STEP INTERPRETER
+
+Convert step text into structured format:
+
+Example:
+"click login" → { action: "click", target: "login" }
+"enter username" → { action: "input", field: "username" }
+
+Rules:
+
+* "click" → click action
+* "enter/type" → input
+* "select" → dropdown
+
+NO ML. Pure rule-based parsing.
+
+---
+
+🔍 ELEMENT DETECTION ENGINE (CRITICAL)
+
+Use multi-strategy detection in this priority:
+
+1. Exact visible text
+2. Partial text match
+3. aria-label
+4. placeholder
+5. button/input tags
+6. XPath fallback
+
+Playwright locators must be used.
+
+---
+
+⚠️ AMBIGUITY HANDLING
+
+CASE 1: Multiple matches
+
+Backend sends:
+{
+"type": "AMBIGUITY",
+"step": "click fund transfer",
+"options": [
+{ "selector": "...", "position": "top-right" },
+{ "selector": "...", "position": "bottom-left" }
+]
+}
+
+Frontend must:
+
+* Highlight elements in browser
+* Show options to user
+* Send selected option back
+
+---
+
+❌ NOT FOUND HANDLING
+
+Backend sends:
+{
+"type": "NOT_FOUND",
+"step": "click reports"
+}
+
+Frontend must:
+
+* Show error message
+* Provide input box
+* Allow user to correct text
+* Send corrected value
+
+Retry step after correction
+
+---
+
+💾 LEARNING MEMORY
+
+Store mappings locally:
+
+{
+"click login": "button#loginBtn"
+}
+
+Reuse in future runs before searching again
+
+---
+
+✅ FLOW VALIDATION PHASE (MANDATORY)
+
+* Execute all steps once
+* Resolve all ambiguity and missing elements
+* If ANY step fails → DO NOT proceed
+
+Only when all steps succeed:
+→ Move to RECORDING state
+
+---
+
+🌐 BROWSER EXECUTION
+
+Use Playwright (non-headless)
+
+* Launch browser
+* Maintain session
+* Handle cookies/tokens automatically
+
+DO NOT use HTTP-only requests
+
+---
+
+📡 NETWORK CAPTURE
+
+Capture via:
+
+1. HAR recording
+2. request/response listeners
+
+Store:
+
+* URL
+* method
+* headers
+* payload
+* response time
+
+---
+
+📊 TRANSACTION BUILDER
+
+Map steps to transactions:
+
+start_transaction("login")
+end_transaction("login")
+
+Naming must be derived from step text
+
+---
+
+📁 OUTPUT FORMAT
+
+Store locally as JSON:
+
+{
+"transactions": [],
+"network_calls": [],
+"metadata": {}
+}
+
+---
+
+🖥️ FRONTEND UI REQUIREMENTS
+
+Auto Recorder Page:
+
+1. Inputs:
+
+* URL field
+* Credentials (JSON input)
+* Steps textarea (5 lines height)
+* File upload (.txt/.pdf, max 1MB)
+
+2. Start Button
+
+3. Live Execution Panel:
+
+* Current step
+* Logs
+* Errors
+
+4. Interaction UI:
+
+* Ambiguity selection
+* Not found correction input
+
+---
+
+⚙️ EDGE CASE HANDLING
+
+System MUST handle:
+
+* dynamic content (ignore variable text)
+* delayed loading (wait_for_selector)
+* hidden elements (scroll into view)
+* iframe switching
+* shadow DOM
+* login/session flows
+* captcha → STOP and notify user
+
+---
+
+🚫 STRICT RULES
+
+* NEVER guess element
+* NEVER skip step silently
+* ALWAYS ask user on ambiguity
+* ALWAYS validate full flow before recording
+* DO NOT record partial or broken flows
+
+---
+
+🎯 SUCCESS CRITERIA
+
+A flow is considered successful ONLY IF:
+
+* All steps executed without error
+* No ambiguity unresolved
+* No missing elements
+* Full navigation completed once
+
+THEN AND ONLY THEN:
+
+→ Start recording phase
+
+---
+
+💡 DESIGN PHILOSOPHY
+
+This is NOT an AI system.
+
+This is:
+"Rule-based intelligent automation engine with future AI extensibility"
+
+Focus:
+
+* determinism
+* reliability
+* transparency
+
+---
+
+🚀 FUTURE EXTENSION (DO NOT IMPLEMENT NOW)
+
+* JMeter export
+* LoadRunner export
+* AI-assisted step understanding
+
+---
+
+PRIORITY ORDER:
+
+1. Accuracy
+2. Stability
+3. User control
+4. Performance
+
+---
