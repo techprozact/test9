@@ -1,3 +1,39 @@
+For ECS deployment, we should NOT rely on Chrome being installed on the server.
+
+Please update setup to bundle Chromium inside the Docker image.
+
+Requirements:
+
+1. Modify Dockerfile to install Chromium:
+
+* Use apt-get to install chromium (or chromium-browser depending on base image)
+* Clean up apt cache to keep image small
+
+2. Set environment variable:
+
+* CHROME_BIN=/usr/bin/chromium (or correct path after install)
+
+3. Update CDP/browser launch config to use this path
+
+4. Add required flags for container execution:
+
+* --no-sandbox
+* --disable-dev-shm-usage
+* --headless=new
+
+5. Ensure application fails fast with clear error if Chromium is not found
+
+Goal:
+The container should be fully self-contained (backend + browser), with no dependency on ECS host setup.
+
+Keep implementation simple and production-ready.
+
+
+
+
+
+
+
 Let’s pause the Chrome extension implementation for now.
 
 We will NOT proceed with extension-based architecture at this stage. The goal is to keep the system simple, stable, and fully server-driven.
