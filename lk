@@ -1,0 +1,86 @@
+Let’s pause the Chrome extension implementation for now.
+
+We will NOT proceed with extension-based architecture at this stage. The goal is to keep the system simple, stable, and fully server-driven.
+
+---
+
+## NEW REQUIREMENT: SNAPSHOT VIEWER
+
+We want to implement a "Live Execution Viewer" using browser snapshots from the server-side CDP browser.
+
+Frontend changes:
+
+1. Add a "Browser View" panel ABOVE the "Live Logs" section
+
+2. Behavior:
+
+* Display latest snapshot image of browser
+* If no snapshot available:
+  Show a clean empty browser placeholder UI (like a blank browser window with "No preview available")
+* Once a snapshot is received:
+  Keep showing the LAST snapshot until a new one arrives (no flickering or clearing)
+
+3. UI expectations:
+
+* Should look like a browser frame (header bar optional: URL / loading indicator)
+* Maintain aspect ratio (16:9 preferred)
+* Smooth updates when new image arrives
+
+---
+
+## BACKEND REQUIREMENTS
+
+1. Capture snapshots:
+
+* Take screenshot at key points:
+  a) After page navigation
+  b) After each successful step execution
+  c) After ambiguity resolution (optional but useful)
+
+2. Use CDP:
+
+* Use Page.captureScreenshot
+
+3. Send snapshot to frontend via WebSocket:
+
+* Base64 encoded image
+* Message type: "SNAPSHOT_UPDATE"
+
+Example:
+{
+"type": "SNAPSHOT_UPDATE",
+"image": "<base64>"
+}
+
+4. Do NOT send too frequently:
+
+* Only on meaningful state changes (step completion / navigation)
+
+---
+
+## FRONTEND WEBSOCKET HANDLING
+
+* Listen for "SNAPSHOT_UPDATE"
+* Update image state
+* Do NOT clear previous image until new one arrives
+
+---
+
+## PERFORMANCE CONSIDERATIONS
+
+* Compress image (jpeg/webp preferred)
+* Limit resolution if needed (e.g., 1280x720)
+
+---
+
+## IMPORTANT
+
+* Do NOT modify core recorder engine logic
+* This is a visual layer only
+* Keep implementation lightweight and stable
+
+---
+
+Once this is done, we will use this for flow validation instead of local browser execution.
+
+---
