@@ -1,0 +1,24 @@
+Current agent download provides Python source files, which is not suitable for end users.
+
+We need to change distribution to a pre-built executable.
+
+Requirements:
+
+1. Build Agent.exe during CI/CD pipeline using PyInstaller
+
+2. Update bundle process:
+   - Instead of zipping agent.py
+   - Zip the built Agent.exe
+
+3. Final downloadable file should be:
+   PerfSonicAgent.zip containing:
+     - Agent.exe (primary)
+     - optional README.txt
+
+4. Ensure:
+   - No Python installation required on user machine
+   - Double-click execution works
+
+5. Keep existing zip-based download approach
+
+Do NOT rely on users to build or run Python scripts manually.
