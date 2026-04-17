@@ -1,0 +1,26 @@
+We will not build Agent.exe in Tekton due to Linux limitation.
+
+Final approach:
+
+1. Agent.exe will be built using PyInstaller on a Windows-capable environment (Devin)
+
+2. The built executable will be committed to:
+   frontend/public/PerfSonicAgent.exe
+
+3. Tekton pipeline will:
+
+   * build frontend
+   * automatically include the exe from public → dist
+
+4. Rules:
+
+   * Agent.exe must be rebuilt ONLY when agent code changes
+   * No need to rebuild for frontend/backend-only changes
+
+5. Add versioning:
+
+   * Embed version in agent
+   * Frontend should validate agent version and prompt re-download if mismatch
+
+Goal:
+Keep solution simple, stable, and compatible with current infrastructure.
