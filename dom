@@ -1,0 +1,238 @@
+We are implementing the FINAL production version of a Java-based local agent (perfsonic-agent.jar).
+
+This agent is the execution engine for browser automation, network capture, and real-time communication.
+
+---
+
+## CORE ARCHITECTURE
+
+The agent runs locally via:
+java -jar perfsonic-agent.jar
+
+It must act as a lightweight local service.
+
+---
+
+1. LOCAL HTTP SERVER
+
+---
+
+Start HTTP server on port 4789
+
+Expose:
+GET /health → { "status": "OK", "version": "1.0.0" }
+
+Used by frontend to detect agent availability.
+
+---
+
+2. WEBSOCKET CONNECTION
+
+---
+
+Connect to backend:
+wss://<host>/auto-recorder/ws/local-agent
+
+Responsibilities:
+
+* Maintain persistent connection
+* Send heartbeat every few seconds
+* Auto-reconnect on disconnect
+* Use sessionId (UUID)
+
+---
+
+3. COMMAND PROCESSING
+
+---
+
+Agent receives commands from backend via WebSocket:
+
+Examples:
+
+* START_SESSION
+* NAVIGATE_URL
+* CLICK_ELEMENT
+* INPUT_TEXT
+* SELECT_DROPDOWN
+* SUBMIT
+* CAPTURE_SNAPSHOT
+* STOP_SESSION
+
+Implement command dispatcher.
+
+---
+
+4. CHROME AUTOMATION (CRITICAL)
+
+---
+
+* Launch Chrome (headless mode)
+* Connect using Chrome DevTools Protocol (CDP)
+* Use WebSocket debugging port
+
+Capabilities:
+
+* Navigate to URL
+* Click elements
+* Input text
+* Wait for elements
+* Handle page load events
+
+---
+
+5. SNAPSHOT STREAMING
+
+---
+
+* Capture screenshots using CDP
+* Trigger on:
+
+  * page navigation
+  * step execution
+* Send snapshot (base64) via WebSocket to backend
+
+---
+
+6. NETWORK CAPTURE
+
+---
+
+Using CDP Network domain:
+
+Capture:
+
+* request URL
+* method
+* headers
+* request payload
+* response body
+* response status
+* timing
+
+Send structured data to backend
+
+---
+
+7. LOGIN HANDLING
+
+---
+
+* Detect login pages (DOM inspection)
+* Trigger LOGIN_REQUIRED event to frontend
+* Wait for credentials
+* Fill username/password
+* Support multi-step login
+* Pause for CAPTCHA / OTP
+* Resume after input
+
+---
+
+8. FORM HANDLING
+
+---
+
+* Handle:
+
+  * text inputs
+  * dropdowns
+  * checkboxes
+  * radio buttons
+
+* Use stable selectors (id, name, xpath fallback)
+
+---
+
+9. SESSION MANAGEMENT
+
+---
+
+* Maintain sessionId
+* Track active browser instance
+* Ensure single session execution per agent
+
+---
+
+10. STABILITY
+
+---
+
+* Prevent multiple agent instances (port check)
+* Handle:
+
+  * browser crash
+  * network loss
+  * WebSocket reconnect
+* Graceful shutdown
+
+---
+
+11. BUILD SETUP
+
+---
+
+Use Maven or Gradle to build:
+
+perfsonic-agent.jar
+
+---
+
+12. CI/CD (TEKTON)
+
+---
+
+* Build jar in pipeline
+* Copy to frontend/public/
+* Include in dist
+
+---
+
+13. USER DISTRIBUTION
+
+---
+
+Provide:
+
+* perfsonic-agent.jar
+* run-agent.bat
+
+run-agent.bat:
+
+@echo off
+start "" /min java -jar perfsonic-agent.jar
+
+---
+
+14. FRONTEND BEHAVIOR
+
+---
+
+Before recording:
+
+Call:
+http://localhost:4789/health
+
+If NOT reachable:
+
+Show popup:
+
+"Agent not running.
+Please start using run-agent.bat or download it below."
+
+Provide:
+
+* Download button
+* Retry button
+
+Do NOT detect installed vs not installed
+
+---
+
+## GOAL
+
+* Full browser automation from local machine
+* Real-time snapshot streaming
+* Network capture
+* Zero dependency install
+* Enterprise-safe architecture
+* Stable and scalable implementation
