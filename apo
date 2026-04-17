@@ -1,0 +1,180 @@
+We need to extend the existing Local Agent to support API execution for API Studio.
+
+This should reuse the current architecture (agent + backend + WebSocket + sessionId). Do NOT create a separate system.
+
+---
+
+## ARCHITECTURE
+
+* API requests should execute on user machine via Local Agent
+* Backend continues orchestration
+* Frontend UI remains same (Postman-like interface)
+
+---
+
+1. NEW COMMAND TYPE
+
+---
+
+Backend should send a new command to agent:
+
+{
+"type": "API_REQUEST",
+"sessionId": "<id>",
+"method": "GET/POST/PUT/DELETE",
+"url": "<full_url>",
+"headers": { ... },
+"body": "<raw/json/form-data>",
+"timeout": <ms>
+}
+
+---
+
+2. AGENT IMPLEMENTATION
+
+---
+
+Agent should:
+
+1. Receive API_REQUEST via WebSocket
+
+2. Execute request locally using:
+
+   * Python: httpx (preferred) or requests
+
+3. Support:
+
+   * HTTP methods: GET, POST, PUT, DELETE, PATCH
+   * Headers
+   * JSON body
+   * form-data (basic support)
+   * query params (via URL)
+
+4. Handle HTTPS (certs automatically available via OS)
+
+5. Capture:
+
+   * status code
+   * response headers
+   * response body
+   * response time
+
+---
+
+3. RESPONSE FORMAT
+
+---
+
+Agent sends back:
+
+{
+"type": "API_RESPONSE",
+"sessionId": "<id>",
+"status": 200,
+"headers": { ... },
+"body": "<response_body>",
+"duration": <ms>,
+"error": null
+}
+
+If error:
+
+{
+"type": "API_RESPONSE",
+"sessionId": "<id>",
+"error": "<error_message>"
+}
+
+---
+
+4. BACKEND CHANGES
+
+---
+
+* Route API requests to agent using sessionId mapping
+* Do NOT execute API on server if agent is connected
+* Forward response to frontend
+
+---
+
+5. FRONTEND BEHAVIOR
+
+---
+
+* Keep UI unchanged (Postman-style)
+
+* On "Send" button:
+
+  * trigger backend API execution
+  * backend routes to agent
+
+* Display:
+
+  * response body
+  * status code
+  * headers
+  * response time
+
+* Show message:
+  "Request executed locally on your machine"
+
+---
+
+6. AGENT DETECTION
+
+---
+
+Before API execution:
+
+* Ensure agent is running (reuse existing /health check)
+* If not:
+  show "Agent required" modal (reuse existing flow)
+
+---
+
+7. SECURITY
+
+---
+
+* Do NOT log sensitive headers (Authorization, tokens)
+* Do NOT persist request/response unless required
+* Keep execution in-memory
+
+---
+
+8. TIMEOUT & ERROR HANDLING
+
+---
+
+* Respect timeout from request
+
+* Handle:
+
+  * connection errors
+  * DNS errors
+  * SSL errors
+  * timeouts
+
+* Return clean error message to frontend
+
+---
+
+9. NON-GOALS
+
+---
+
+* Do NOT add new UI complexity
+* Do NOT move API execution to server for cert-based APIs
+* Do NOT duplicate agent logic
+
+---
+
+## GOAL
+
+Enable API Studio to execute requests locally via agent, ensuring support for:
+
+* certificate-based APIs
+* VPN/internal APIs
+* restricted enterprise environments
+
+Keep implementation simple, reusable, and aligned with existing agent architecture.
