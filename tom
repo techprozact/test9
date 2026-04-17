@@ -1,0 +1,94 @@
+We are switching to a Java-based local agent (.jar) to avoid OS-specific build issues.
+
+Final architecture and requirements:
+
+---
+
+## AGENT IMPLEMENTATION (JAVA)
+
+1. Implement a lightweight Java agent with following capabilities:
+
+   * Runs on user machine via: java -jar perfsonic-agent.jar
+   * Starts a local HTTP server on port 4789
+   * Exposes endpoint:
+     GET /health → returns { "status": "OK", "version": "1.0.0" }
+
+2. Establish WebSocket connection to backend:
+   wss://<host>/auto-recorder/ws/local-agent
+
+3. Agent responsibilities:
+
+   * Maintain WebSocket connection
+   * Send heartbeat/status
+   * Receive commands from backend (future use)
+   * Keep implementation minimal and stable (no over-engineering)
+
+---
+
+## BUILD SETUP
+
+4. Use Maven or Gradle to build:
+   perfsonic-agent.jar
+
+5. DO NOT commit .jar to repository
+
+---
+
+## CI/CD (TEKTON)
+
+6. Update Tekton pipeline:
+
+   * Step 1: Build Java agent using Maven/Gradle
+   * Step 2: Copy generated perfsonic-agent.jar → frontend/public/
+   * Step 3: Run frontend build so jar is included in dist
+
+---
+
+## USER DISTRIBUTION
+
+7. Provide download package via frontend:
+
+   * perfsonic-agent.jar
+   * run-agent.bat
+
+8. run-agent.bat should:
+
+   * Start agent with double-click
+   * Run silently/minimized
+
+Example:
+
+@echo off
+start "" /min java -jar perfsonic-agent.jar
+
+---
+
+## FRONTEND INTEGRATION
+
+9. Before starting recording:
+
+   * Call http://localhost:4789/health
+
+10. If NOT reachable:
+    Show SINGLE popup (no complexity):
+
+"Agent not running.
+Please start using run-agent.bat or download it below."
+
+Provide:
+
+* Download button (jar + bat)
+* Retry button
+
+11. Do NOT attempt to detect "installed vs not installed"
+    Only check "running vs not running"
+
+---
+
+## GOAL
+
+* Zero dependency installation
+* No OS-specific binaries
+* Fully CI/CD driven build
+* Simple and reliable user experience
+* Enterprise-safe design
