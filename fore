@@ -1,0 +1,37 @@
+We need to handle form-based pages intelligently during flow execution.
+
+Please implement the following:
+
+1. Form Detection:
+* Detect input, select, textarea, radio, checkbox elements
+* Extract label/name/type for each field
+
+2. Execution Pause:
+* If form is detected, pause execution before submission
+
+3. Dynamic Form UI:
+* Send field metadata to frontend
+* Render a dynamic input form for user to provide values like- 
+Render:
+Field	Type	Input
+Name	Text	[____]
+Country	Dropdown	[India ▼]
+Gender	Radio	( ) Male ( ) Female
+Terms	Checkbox	☑
+
+4. User Input Handling:
+* Accept values from UI
+* Fill fields in browser using CDP
+* Resume execution
+
+5. Snapshot Integration:
+* Keep latest snapshot visible
+* Overlay form input UI on top
+
+6. Memory:
+* Store user-provided values for future re-use on user browser side cache, so such values will be shown to user only and not to others.
+
+Goal:
+Ensure form-heavy flows are handled reliably without breaking automation.
+
+Do NOT auto-submit forms without user-provided or validated inputs.
