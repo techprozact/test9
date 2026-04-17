@@ -1,0 +1,136 @@
+We need to implement a universal Login Handling Engine as part of the auto flow system.
+
+This should be system-level logic, not dependent on user steps.
+
+---
+
+1. LOGIN DETECTION
+
+---
+
+Detect login context dynamically by scanning DOM:
+
+* Username field candidates:
+
+  * input[type=text/email]
+  * id/name contains: user, email, login, uid
+
+* Password field:
+
+  * input[type=password]
+
+* Buttons:
+
+  * text contains: login, sign in, next, continue, submit
+
+If password field is present OR username + login button combination is found → mark as LOGIN_CONTEXT
+
+---
+
+2. MULTI-STEP LOGIN SUPPORT
+
+---
+
+Handle:
+
+* Single page login (username + password)
+* Split login:
+  Page 1 → username → next
+  Page 2 → password → submit
+
+Maintain state across pages and continue login flow automatically.
+
+---
+
+3. LABEL NORMALIZATION
+
+---
+
+Map variations:
+
+* user id / login id / email → username
+
+---
+
+4. CREDENTIAL MANAGER
+
+---
+
+Store credentials per domain:
+
+{
+"domain": "app.com",
+"username": "...",
+"password": "..."
+}
+
+Behavior:
+
+* First time → ask user
+* Next time → prefill and confirm
+
+---
+
+5. UI REQUIREMENTS
+
+---
+
+When login detected:
+
+* Show overlay on snapshot:
+  "Login Required"
+
+* Fields:
+  Username (prefilled if available)
+  Password (masked with dots + eye toggle)
+
+* Buttons:
+  Continue / Edit
+
+---
+
+6. EXECUTION FLOW
+
+---
+
+* Pause execution on login detection
+* Fill credentials via CDP
+* Submit login
+* Wait for navigation
+* Resume flow
+
+---
+
+7. DOMAIN MATCH REUSE
+
+---
+
+If URL/domain matches previous login:
+
+* Ask user:
+  "Use saved credentials?"
+
+---
+
+8. EDGE CASE HANDLING
+
+---
+
+* If CAPTCHA / OTP detected → stop and notify user
+* If already logged in → skip login
+* If multiple buttons → use ambiguity resolver
+
+---
+
+9. SECURITY
+
+---
+
+* Never log password
+* Always mask password in UI
+* Store securely (basic encryption optional for now)
+
+---
+
+Goal:
+Make login handling automatic, adaptive, and reusable across applications without requiring explicit user steps.
