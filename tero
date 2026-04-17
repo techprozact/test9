@@ -1,0 +1,140 @@
+We need to change Auto Recorder functionality  and need to use a Local(client side and not server side) Headless Execution architecture.
+Follow instructions carefully and keep implementation clean, minimal, and robust.
+
+## ARCHITECTURE OVERVIEW
+* Execution happens on user/client machine via Local Agent.
+* Backend (ECS) orchestrates execution.
+* Frontend UI shows snapshot preview same like currently what we have but now snapshot will come from user machine and not server.
+* Browser remains headless (hidden) always for all users.
+* Admin-only debug mode can enable visible browser (keep a comment in code to implement this later, as of now will go defualt hidden for all)
+
+1. LOCAL AGENT
+
+Create a lightweight agent (Python → packaged as executable):
+User downloads → double-click → agent runs (no install, no admin rights)
+Responsibilities:
+1. Run local HTTP server:
+   GET http://localhost:4789/health → returns "OK"
+2. Accept session registration:
+   POST /register?sessionId=<id>
+3. Maintain active sessionId
+4. Connect to backend via WebSocket:
+   /ws/local-agent
+5. Send:
+   {
+   "type": "AGENT_REGISTER",
+   "sessionId": "<id>"
+   }
+
+2. BROWSER EXECUTION (LOCAL)
+Agent launches Chrome:
+Default (hidden):
+* --headless=new
+* --remote-debugging-port=9222
+* --no-sandbox
+* --disable-gpu
+
+Agent must:
+* Connect via CDP
+* Reuse existing execution logic (click, type, navigate)
+
+3. SNAPSHOT STREAMING
+After key actions of step execution and page loading, agent Captures the snapshot and send to backend which will get diplahyed on frontend
+
+4. SESSION MANAGEMENT
+
+Frontend:
+* Generate UUID per session
+Flow:
+1. User clicks "Start Recording"
+2. Generate sessionId
+3. Call:
+   http://localhost:4789/register?sessionId=<id>
+Agent:
+* Stores sessionId
+* Registers via WebSocket
+Backend:
+* Maintain mapping:
+  sessionId → agent connection
+All commands routed via sessionId
+
+5. AGENT DETECTION
+Frontend must:
+1. Call:
+   http://localhost:4789/health
+2. If fail:
+   Show modal when user clicks on auto recorder tab. Modal should be non closable and show message like:
+   "PerfSonic Agent is required to use the recorder functionality"
+   Buttons:
+   * Download Agent (put one Important line at modal bottom, "Once downloaded, Please double click Agent.exe to start"
+   * Retry
+3. Retry detection every 2–3 seconds
+4. Once detected → remove modal and on top right show Agent connected with green dot heartbeat, until agent is responding.
+
+on every user machine we need to restart agent once their machine gets restared-
+Startup Folder (Simplest & Safe)-
+Add shortcut to:
+C:\Users\<user>\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+
+How agent does it (on first run):
+creates .lnk shortcut of itself
+places in startup folder
+
+---
+
+6. EXECUTION FLOW
+Backend remains same:
+* Receives steps
+* Uses existing logic:
+  * login handling
+  * form handling
+  * navigation
+  * ambiguity handling
+
+BUT:
+* Instead of server browser → send commands to agent
+
+7. HEARTBEAT & FAILURE HANDLING
+Agent:
+* Send heartbeat every few seconds
+Backend:
+* If heartbeat lost:
+  Pause execution
+  Notify frontend:
+  "Agent disconnected"
+Handle:
+* browser crash
+* agent shutdown
+* network loss
+
+8. RESOURCE MANAGEMENT
+On session end:
+Agent must:
+* Close browser
+* Release CDP connection
+* Clear sessionId
+
+Backend must:
+* Remove session mapping
+
+9. UI REQUIREMENTS
+
+Entire frontend should be as it is, now just logs and snapshot will come via agent from user machine. Show one line at bottom- 
+"Flow navigation runs locally on user machine"
+
+10. SECURITY & TRANSPARENCY
+* Store username/password, form data everything local to user only in user machine cache.
+* Do NOT embed browser in UI
+* Do NOT use Chrome extensions
+* Do NOT move execution back to server
+
+## GOAL
+
+Provide a seamless experience:
+User clicks "Start Recording"
+→ Local agent runs hidden browser
+→ Backend controls execution
+→ UI shows preview
+→ Works for all enterprise apps (cert/VPN included)
+
+use your intelligence to create a robust, scalable and professional solution.
