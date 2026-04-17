@@ -1,0 +1,185 @@
+We need to fix critical issues in the Local Agent Auto Recorder implementation before merging. Focus only on correctness and stability. Do NOT introduce unnecessary refactors.
+
+---
+
+## PRIORITY 1 — CRITICAL FIXES (MUST COMPLETE)
+
+1. FIX NETWORK CAPTURE (BROKEN)
+
+Problem:
+CDP network events from agent browser are not reaching backend, resulting in zero recorded network calls.
+
+Required Fix:
+
+* In agent (agent.py):
+
+  * Listen to CDP events:
+
+    * Network.requestWillBeSent
+    * Network.responseReceived
+    * Network.loadingFinished
+  * Capture relevant fields:
+
+    * URL
+    * method
+    * headers
+    * request payload (if available)
+    * response status
+    * response headers
+    * timestamp
+
+* Forward events via WebSocket to backend:
+
+Example:
+{
+"type": "NETWORK_EVENT",
+"sessionId": "<id>",
+"event": "requestWillBeSent",
+"data": { ... }
+}
+
+* In backend (agent_bridge.py or recorder_engine.py):
+
+  * Receive NETWORK_EVENT
+  * Dispatch to existing network handlers (same logic used for CDP browser)
+  * Ensure no change required in parser layer
+
+Goal:
+Agent-based execution must produce SAME network capture as server-side CDP.
+
+---
+
+2. FIX SESSION START RACE CONDITION
+
+Problem:
+Frontend sends "start" before agent is fully registered → fallback to server-side execution.
+
+Required Fix:
+
+* Backend:
+
+  * After agent connects via WebSocket and sends AGENT_REGISTER
+  * Mark sessionId as READY
+
+* Frontend:
+
+  * After calling localhost register endpoint
+
+  * WAIT for backend confirmation event:
+
+    {
+    "type": "AGENT_READY",
+    "sessionId": "<id>"
+    }
+
+  * Only after receiving AGENT_READY → trigger recording start
+
+* Add timeout handling (e.g., 5–10 sec)
+
+Goal:
+Recording should NEVER start unless agent is confirmed ready.
+
+---
+
+## PRIORITY 2 — IMPORTANT FIXES
+
+3. START HEARTBEAT MONITOR
+
+Problem:
+monitor_heartbeats() is defined but never started
+
+Fix:
+
+* Start heartbeat monitoring loop during backend startup
+* If heartbeat missing:
+
+  * mark agent disconnected
+  * notify frontend
+
+---
+
+4. AGENT PACKAGING (MINIMUM SUPPORT)
+
+Problem:
+Agent requires manual Python execution
+
+Fix:
+
+* Add packaging support:
+
+  * Create requirements.txt for agent
+  * Ensure agent runs standalone
+
+* Add basic PyInstaller config (or script) to generate executable:
+  Agent.exe
+
+Do NOT over-optimize packaging — basic working version is enough.
+
+---
+
+PRIORITY 3 — CLEANUP (LIGHT)
+
+---
+
+5. FIX ASYNCIO DEPRECATION
+
+Replace:
+asyncio.get_event_loop().create_future()
+
+With:
+asyncio.get_running_loop().create_future()
+
+---
+
+6. REMOVE UNUSED CODE
+
+* Remove:
+
+  * ws_to_agent dict (if unused)
+  * get_all_agents() (if unused)
+  * any unused imports
+
+---
+
+TEST REQUIREMENTS (MANDATORY)
+
+---
+
+1. Start agent + backend
+2. Start recording session
+3. Verify:
+
+   * agent is used (no fallback)
+   * network calls are captured (NOT empty)
+4. Validate:
+
+   * snapshots still working
+   * no race condition (run multiple times)
+5. Kill agent mid-session:
+
+   * confirm disconnect handled correctly
+
+---
+
+IMPORTANT CONSTRAINTS
+
+---
+
+* Do NOT break existing working flow
+* Do NOT refactor architecture
+* Only fix missing links and correctness issues
+* Keep solution minimal and reliable
+
+---
+
+GOAL
+
+---
+
+Make local-agent-based recorder:
+
+* functionally equivalent to server-side recorder
+* stable and deterministic
+* ready for merge and ECS deployment
+
+---
