@@ -1,3 +1,13 @@
+<plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <version>3.11.0</version>
+            <configuration>
+                <source>11</source>
+                <target>11</target>
+            </configuration>
+        </plugin>
+
 We are implementing the FINAL production version of a Java-based local agent (perfsonic-agent.jar).
 
 This agent is the execution engine for browser automation, network capture, and real-time communication.
