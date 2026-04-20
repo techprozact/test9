@@ -1,3 +1,10 @@
+JsonObject params = new JsonObject();
+params.addProperty("expression", "1");
+
+cdpSend("Runtime.evaluate", params, cdpSessionId);
+
+
+
 We need to extend the existing Local Agent to support API execution for API Studio.
 
 This should reuse the current architecture (agent + backend + WebSocket + sessionId). Do NOT create a separate system.
