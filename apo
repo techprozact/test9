@@ -1,3 +1,44 @@
+1. Input Field Detection (CRITICAL FIX)
+
+Improve input detection logic with priority order:
+
+First try:
+<input>
+<textarea>
+<select>
+Then support modern UIs:
+[contenteditable="true"]
+[role="textbox"]
+.ProseMirror (Jira editors)
+If still not found:
+Fallback to:
+any visible contenteditable=true element
+pick the most recently added / active element
+2. Post-Click Dynamic Handling
+
+After any CLICK action:
+
+Wait for DOM update (dynamic UI)
+Detect newly rendered elements
+Retry element detection up to 3 times with small delays (0.5s, 1s, 1.5s)
+3. Smart Fallback (VERY IMPORTANT)
+
+If user says:
+
+enter "value" in "field name"
+
+And no exact match found:
+
+DO NOT fail immediately
+Instead:
+search all visible input candidates
+prefer:
+elements in modals/popups
+elements recently added to DOM
+if only one candidate → auto-select
+if multiple → show ambiguity UI
+
+
 We are facing issues with entering text into dynamic input fields (e.g., Jira comment box).
 
 Please fix the input detection and handling logic with the following requirements:
