@@ -1,0 +1,27 @@
+Improve element selection to reduce false matches:
+
+1. Restrict candidates to:
+   - button, a, input, select, textarea
+   - elements with role="button" or onclick
+   - remove generic div/span unless explicitly clickable
+
+2. Add text matching priority:
+   - exact match first
+   - startsWith next
+   - contains last
+
+3. Reject noisy elements:
+   - text length > 40 characters
+   - width/height < 20px
+   - not visible
+
+4. Add simple position scoring:
+   - prefer elements in top half of viewport
+
+5. Add keyword-based hints:
+   - "dropdown" → prefer select/button with aria-haspopup
+   - "link" → prefer <a>
+   - "field" → prefer input/textarea
+
+Goal:
+Reduce matches from 10+ to 1–2 in most cases and improve auto-selection accuracy.
