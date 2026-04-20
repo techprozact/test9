@@ -1,3 +1,28 @@
+We are facing issues with entering text into dynamic input fields (e.g., Jira comment box).
+
+Please fix the input detection and handling logic with the following requirements:
+
+Support all input types:
+<input>, <textarea>, and contenteditable="true" elements (rich text editors like Jira)
+Fix the runtime error:
+'AgentBrowser' object has no attribute 'find_input_fields'
+After any click that opens a UI (e.g., "Add comment"):
+Wait for the input field to appear before searching
+Improve field matching:
+Use nearby label/text (e.g., "Comment") to identify the correct field
+Prefer visible and interactable elements only
+Ensure typing works correctly in rich editors:
+Focus the field before typing
+Trigger proper input/change events
+Limit search scope:
+Prefer searching within the newly opened UI/container instead of full page
+
+Goal:
+System should correctly handle commands like:
+enter "Test comment" in comment input field
+even for dynamic/react-based UIs like Jira.
+
+
 JsonObject params = new JsonObject();
 params.addProperty("expression", "1");
 
