@@ -1,3 +1,31 @@
+The login flow redirects from base OpenShift URL to an OAuth URL.
+
+After redirect, input detection still returns 0, which suggests we are still attached to the old page target.
+
+Please ensure:
+
+1. After every navigation/redirect, we:
+   - Re-fetch targets using Target.getTargets or targetCreated events
+   - Identify the latest page target (type = "page", with correct URL)
+   - Re-attach using Target.attachToTarget(flatten=true)
+
+2. Always update and use the latest sessionId after redirect
+
+3. Before running input detection, log:
+   - location.href
+   - document.title
+
+4. Ensure evaluation is happening on the OAuth login page, not the initial blank/base page
+
+This seems to be a target/session switching issue due to redirect.
+
+
+
+
+
+
+
+
 We are facing a critical issue with element detection in CDP.
 
 Problem:
