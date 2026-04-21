@@ -1,0 +1,164 @@
+Implement a **Certificate Management + mTLS Execution module** for perfSonic with the following architecture and behavior.
+
+## 🎯 Goal
+
+Enable users to upload client certificates and explicitly select a certificate per API request. The agent should use the selected certificate to execute mTLS-secured APIs.
+
+---
+
+## 🧩 1. Certificate Manager (Frontend + Backend + Agent)
+
+### Frontend (UI)
+
+* Add a **“Certificate Manager”** screen
+* Allow user to:
+
+  * Upload certificate file (`.pem`, `.crt`, `.p12`, `.pfx`)
+  * Enter:
+
+    * Certificate Name (unique, user-friendly)
+    * Password (optional, masked)
+* Show list of uploaded certificates:
+
+  * Name
+  * Type
+  * Actions: Delete
+
+---
+
+### Backend (ECS)
+
+* Acts as **relay only (no permanent storage)**
+* API:
+
+  * `POST /cert/upload` → receives file + metadata → forwards to agent via WebSocket
+  * `GET /certs` → fetch from agent (proxy call)
+  * `DELETE /cert/{name}` → forward delete request to agent
+
+---
+
+### Agent (Java)
+
+#### Storage
+
+* Create directory:
+
+  * Windows: `~/AppData/Local/perfsonic/certs`
+  * Mac/Linux equivalents
+* Store:
+
+  * Certificate file (prefer converting to PKCS12 `.p12`)
+  * Metadata file: `certs.json`
+
+Example:
+
+```
+certs/
+  payments_cert.p12
+  auth_cert.p12
+  certs.json
+```
+
+#### certs.json structure:
+
+```
+[
+  {
+    "name": "Payments Cert",
+    "file": "payments_cert.p12",
+    "type": "PKCS12"
+  }
+]
+```
+
+#### APIs exposed by Agent:
+
+* `GET /certs` → return list of cert names + metadata
+* `POST /cert` → save cert (convert to PKCS12 if needed)
+* `DELETE /cert/{name}` → delete cert + update config
+
+---
+
+## 🔗 2. API Studio Integration
+
+### Frontend बदलाव:
+
+* In Request Design UI (below Authentication), add:
+
+  ```
+  Certificate: [ None ▼ ]
+  ```
+* Populate dropdown using `GET /certs`
+* Allow user to select one certificate per request
+
+---
+
+## 🚀 3. API Execution Flow
+
+### Frontend → Backend → Agent payload:
+
+Include:
+
+```
+{
+  "url": "...",
+  "method": "...",
+  "headers": {...},
+  "body": "...",
+  "certificate": "Payments Cert" // optional
+}
+```
+
+---
+
+### Agent Execution Logic:
+
+```
+if (certificate != null) {
+    load cert from storage
+    build SSLContext using cert
+    attach to HttpClient
+} else {
+    use default HttpClient
+}
+execute request
+return response
+```
+
+---
+
+## ⚠️ 4. Error Handling
+
+* If cert selected but not found:
+  → `"Selected certificate '<name>' not found on agent"`
+
+* If API requires cert but none provided:
+  → `"mTLS certificate required but not provided"`
+
+---
+
+## 🔐 5. Security
+
+* Do NOT store certificates in backend
+* Store only in agent
+* Mask passwords
+* Prefer PKCS12 format internally
+* (Optional) Encrypt certs at rest
+
+---
+
+## 🧠 Notes
+
+* No domain-based mapping required
+* Explicit per-request certificate selection only
+* Keep agent as execution layer (no business logic)
+* Backend remains stateless relay
+
+---
+
+## ✅ Outcome
+
+* Users upload certificates once
+* Select certificate per API request
+* Agent executes API with correct SSL context
+* Supports enterprise mTLS use cases
