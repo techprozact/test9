@@ -1,3 +1,26 @@
+Fix input field detection inside cross-origin iframes:
+
+1. Use CDP Page.getFrameTree to list all frames
+2. For each frame:
+   - Create isolated execution context (Page.createIsolatedWorld)
+   - Run field detection JS inside that frame (Runtime.evaluate)
+
+3. Ensure detection includes:
+   - input, textarea, [contenteditable], [role="textbox"]
+
+4. Return results with frameId and selector
+
+5. Merge results from all frames before scoring
+
+6. Add debug logs:
+   - number of frames found
+   - number of inputs found per frame
+
+Current issue: system reports "no inputs found" even though fields exist inside iframe.
+
+
+
+
 Improve input field detection to support attribute-based matching:
 
 1. Detect fields using:
