@@ -1,3 +1,25 @@
+Improve input field detection to support attribute-based matching:
+
+1. Detect fields using:
+   - name, id, placeholder (case-insensitive contains match)
+   - common keywords: username, user, email, login, password
+
+2. Add support for custom attributes:
+   - island_field_type (e.g. USERNAME, PASSWORD)
+
+3. Improve label handling:
+   - Map label[for] → input[id]
+   - Do not depend on label text presence
+
+4. Add scoring system:
+   - attribute match > label match > proximity match
+
+5. If multiple inputs found:
+   - prioritize by attribute score
+   - fallback to first visible input
+
+Goal: Ensure fields like id="inputUsername" name="username" are always detected even when label text is empty.
+
 1. Input Field Detection (CRITICAL FIX)
 
 Improve input detection logic with priority order:
