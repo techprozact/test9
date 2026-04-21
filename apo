@@ -1,3 +1,35 @@
+The input diagnostics show that valid inputs are detected and pass visibility checks:
+
+- input[type=text][name=username][id=inputUsername]
+- input[type=password][name=password][id=inputPassword]
+
+However, the system still reports "0 input fields detected for 'username input field'".
+
+This indicates the issue is not detection, but matching.
+
+Please update matching logic to:
+
+1. Support keyword-based matching:
+   - "username input field" → match name="username" or id containing "username"
+
+2. Normalize step text:
+   - remove words like "input", "field", "box"
+   - extract core keyword ("username")
+
+3. Prioritize attribute matching:
+   - name, id, placeholder
+   - case-insensitive partial match
+
+4. If multiple candidates exist:
+   - prefer type="text" for username
+   - prefer type="password" for password
+
+Goal: map user intent → element attributes, not exact text match
+
+
+
+
+
 The login flow redirects from base OpenShift URL to an OAuth URL.
 
 After redirect, input detection still returns 0, which suggests we are still attached to the old page target.
