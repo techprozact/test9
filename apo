@@ -1,3 +1,53 @@
+We are facing a critical issue with element detection in CDP.
+
+Problem:
+- document.querySelectorAll('input') returns 0
+- But inputs are clearly visible in browser (username/password fields exist)
+- This confirms we are executing JS in wrong target/session/context
+
+Required Fix:
+
+1. Ensure correct target attachment:
+   - Enable Target.setDiscoverTargets
+   - Listen to Target.targetCreated
+   - Filter only targets where type = "page"
+   - Attach using Target.attachToTarget with flatten=true
+   - Store sessionId for the active page
+
+2. Ensure ALL CDP calls use correct sessionId:
+   - Runtime.evaluate
+   - Page.getFrameTree
+   - Any DOM queries
+   - Verify no call is made without sessionId
+
+3. Handle navigation properly:
+   - When page navigates (SSO/login redirect), detect new target
+   - Reattach to new target
+   - Update sessionId accordingly
+
+4. Add debug logs:
+   - document.title
+   - window.location.href
+   - document.readyState
+   - document.querySelectorAll('input').length
+   - number of targets available
+
+5. Ensure evaluation runs only after DOM is ready:
+   - Wait for document.readyState === 'complete'
+   - Add small delay (1–2 seconds) before detection
+
+Goal:
+Ensure that document.querySelectorAll('input') returns correct count for login pages like OpenShift.
+
+Do NOT modify selector logic.
+Focus only on CDP target/session/context correctness.
+
+
+
+
+
+
+
 Fix input field detection inside cross-origin iframes:
 
 1. Use CDP Page.getFrameTree to list all frames
