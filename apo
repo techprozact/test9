@@ -1,3 +1,33 @@
+We are now correctly detecting input fields via direct fallback (2 inputs found: username and password), but scoring is not being applied on fallback results.
+
+Issue 1:
+Fallback returns multiple inputs with equal score (50), ignoring keyword matching.
+We need to apply keywordAttrScore (or equivalent NLP scoring) on fallback results before final selection.
+
+Expected:
+- "username" step should strongly match name="username"
+- password field should get low score
+- system should auto-select username without prompting
+
+Issue 2:
+After user manually selects an option, the step still fails.
+This indicates the selected selector is not being reused correctly in the fill step.
+
+Fix:
+- Ensure selected selector is passed to fill_input
+- Ensure execution happens in same sessionId
+- Verify evaluate() is executed on selected element
+
+Goal:
+- No selection UI when confident match exists
+- If user selects manually → step must succeed
+
+
+
+
+
+
+
 1. Support keyword-based matching:
    - "username input field" → match name="username" or id containing "username"
 
