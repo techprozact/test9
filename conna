@@ -1,0 +1,156 @@
+Implement persistent **single-agent session management** for perfSonic with the following behavior.
+
+## Goal
+
+Use **one shared agent session** for the entire application (API Studio, Auto Recorder, Certificate Manager), and keep the agent continuously connected and READY while the agent process is running.
+
+---
+
+## 1. Single Shared Agent Session (No separate module sessions)
+
+Refactor architecture so:
+
+* Only **one session** exists between backend and agent per running agent instance.
+* This session is reused for:
+
+  * API Studio requests
+  * Auto Recorder commands
+  * Certificate operations
+* Do **not** create separate sessions per module.
+
+Use:
+
+* `sessionId` = persistent connection identity
+* `taskId` = individual operation (API call, recorder task, etc.)
+* `requestId` = message correlation
+
+All commands should route through the same active session.
+
+Example payload pattern:
+
+```json id="fw0l1t"
+{
+  "sessionId": "...",
+  "taskId": "...",
+  "module": "apiStudio | recorder | certManager",
+  "action": "...",
+  "payload": {...}
+}
+```
+
+---
+
+## 2. Agent Should Auto-Connect on Startup (Always-Ready Agent)
+
+As soon as user starts the agent:
+
+Implement this lifecycle automatically:
+
+```text id="0td7jq"
+Agent starts
+→ Connect backend
+→ Create/Register session
+→ Send READY
+→ Start heartbeats
+→ Wait for commands
+```
+
+Do NOT wait for user actions (upload cert, execute API, start recorder) to establish a session.
+
+The agent should already be connected and ready before any UI action.
+
+---
+
+## 3. Persistent Connection Requirements
+
+While agent process is running:
+
+* Maintain session continuously (24x7 while process lives)
+* No idle session disconnection
+* No session expiry due to inactivity
+* No “No agent session connected” race condition
+
+Session should only terminate if:
+
+* Agent process is killed
+* User explicitly disconnects
+* Network loss (then auto-reconnect)
+
+---
+
+## 4. Heartbeats + Auto Reconnect
+
+Add periodic heartbeat:
+
+```json id="f73crn"
+{
+ "type":"heartbeat",
+ "sessionId":"...",
+ "status":"READY"
+}
+```
+
+Heartbeat interval: configurable (e.g. 30–60 seconds)
+
+If backend connection drops:
+
+Agent should automatically:
+
+1. Reconnect
+2. Re-register session
+3. Send READY again
+4. Resume waiting for commands
+
+No manual user action required.
+
+---
+
+## 5. Agent State Model
+
+Implement states:
+
+```text id="l6abjq"
+STARTING
+READY
+BUSY
+DISCONNECTED
+```
+
+Expose state to UI so frontend can show:
+
+* Agent Connected
+* Agent Starting
+* Agent Offline
+
+---
+
+## 6. Keep Existing Browser Cleanup Logic
+
+IMPORTANT:
+
+Keep existing Chrome/browser auto-kill after 2 hours inactivity exactly as-is to avoid memory issues.
+
+Do NOT tie browser lifetime to agent lifetime.
+
+Rules:
+
+```text id="2i2vqb"
+Agent session stays alive continuously
+Browser/CDP can still be recycled after 2 hours idle
+```
+
+Agent remains connected even if browser is restarted later.
+
+---
+
+## 7. Expected Outcome
+
+After agent launch:
+
+* User can immediately upload certificates
+* User can immediately execute APIs
+* User can immediately start recorder
+
+No warm-up delay.
+No session-not-connected errors.
+One persistent session for entire application.
