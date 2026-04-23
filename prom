@@ -1,0 +1,108 @@
+Implement a new backend feature in perfSonic: Generate LoadRunner Script from all requests already present in API Studio (/perfzy page). at the end highlight what all files were changed or added during this implementation.
+
+## Goal
+
+Use the existing requests in API Studio and generate an LoadRunner's vugen script package (.zip) using existing request sequence, correlations, and parameterization data. 
+
+we already creating python scripts using requests selected by user in create script modal, now we use the same requests and create LR script. 
+On frontend- Keep same create Script button on /perfzy page but inside that instead of "Generate script" create three buttons. "Load Runner", "Jmeter", "Python". (Create Jmeter button only, we wil do implementation later)
+
+---
+
+## Use existing requests already available in API Studio same way we using it for pythin script creation and asking user to select.
+
+we need to create LR script(Action.c file) using these values:
+
+* Request order / execution sequence
+* URL, method, headers, body
+* Correlations accepted by user in Correlation tab
+* Parameters accepted by user in Parameterization tab
+
+
+## Backend Implementation
+
+Generate ONLY dynamic files:
+
+1. `Action.c`
+
+* Convert all API Studio requests into LoadRunner web services style requests
+* Preserve request order
+* Include user-accepted correlations
+* Reuse correlated values across requests
+* Use parameter references where parameters exist
+
+2. Generate `.dat` files
+* One `.dat` file per parameter
+* Seed each with currently identified original value
+* Example:
+
+customerId.dat
+accountId.dat
+
+---
+
+## DO NOT generate all boilerplate files in code
+
+Instead:
+
+Use a static template folder e.g.:
+
+/templates/vugen_boilerplate/
+
+I will manually place existing working VuGen boilerplate files there from real office scripts.
+
+Examples may include:
+
+* default.cfg
+* vuser_init.c
+* vuser_end.c
+* template .usr
+* runtime/supporting files
+
+Treat these as source templates.
+
+---
+
+## Script Packaging Logic
+
+When user provides Script Name:
+
+1. Create output folder:
+
+/generated/<ScriptName>/
+
+2. Copy all files from:
+
+/templates/vugen_boilerplate/
+
+into generated script folder
+
+3. Inject generated dynamic files:
+* add/modify generated `Action.c`
+* Add all generated `.dat` files
+* Keep only 20 scripts in /generated folder. once it crosses 20 count, delete first created script and create new script and continue in FIFO way for future scripts. you can check oldest by date for deletion.
+
+4. Update '.usr' and other files to reflect script name. i wil give boilerplate.extn format for boiler plate files. use logic to replace bolierplate.extn to script_name.extn for boilerplate files and include oin new script folder.
+
+5. Zip entire generated folder:
+
+<ScriptName>.zip
+
+6. Return zip as downloadable artifact, should get downloaded to user machine once processing finishes and create one loadrunner tab in scripts and show those 20 scripts from backed there.
+
+
+## Action.c generation expectations
+
+Use LoadRunner web services style generation patterns.
+
+For each request:
+* Emit request block
+* Emit correlation registrations where applicable
+* Replace parameterized values using LR parameter syntax
+
+Use current correlation and parameter metadata as source of truth.
+Do not attempt to infer new correlations.
+Only use accepted correlations already stored.
+Write correct functions like web_reg_save_param to save correlations and should use correct LB and RB.
+Python and LoadRunner should be sibling generated from same request model, and user can request anyone.
+
