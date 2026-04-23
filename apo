@@ -1,3 +1,16 @@
+[parameters]
+UserName=File
+UserName_ColumnName=UserName
+UserName_Delimiter=,
+UserName_FileLocation=UserName.dat
+UserName_FirstRow=1
+UserName_Format=Quoted
+UserName_OutOfRangePolicy=Cycle
+UserName_SelectNextRow=Sequential
+UserName_UpdateValueOn=EachIteration
+UserName_GenerateNewVal=EachOccurrence
+
+
 We are now correctly detecting input fields via direct fallback (2 inputs found: username and password), but scoring is not being applied on fallback results.
 
 Issue 1:
