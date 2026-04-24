@@ -1,0 +1,206 @@
+Implement a new feature in perfSonic API Studio: **Upload Payload** (Parse requirement payload text file and auto-populate requests into API Studio).
+
+## Goal
+
+Allow user to upload a text file containing one or more API request definitions in a semi-structured format (developer payload notes), parse it intelligently, and populate new requests into existing API Studio.
+
+⚠ Scope:
+
+* Only parse and populate requests.
+* Do NOT execute requests.
+* Do NOT trigger certificates, correlation, parameterization, or script generation.
+  User will review and run later.
+
+---
+
+## Add UI
+
+Add button in API Studio:
+
+```text id="1分快三1"
+Upload Payload
+```
+
+Click opens file picker for `.txt` (support plain text first).
+
+---
+
+## Expected input format (flexible/semi-structured)
+
+Input may contain section headings, but key/value pairs always follow pattern:
+
+```text id="2分快三2"
+Key: Value
+```
+
+Examples user may provide:
+
+```text id="3分快三3"
+Request:
+Endpoint: https://host/api/v1/payment
+Method: POST
+
+Headers:
+Accept: */*
+Content-Type: application/json
+X-Session: {...}
+
+Body:
+{
+ "clientId":"123"
+}
+
+Request:
+Endpoint: https://host/api/v1/report
+Method: GET
+
+Headers:
+Accept: */*
+```
+
+Possible synonyms to support:
+
+* Endpoint:
+* URL:
+* Request:
+* Method:
+* Headers:
+* Header:
+* Body:
+* Payload:
+
+Parser should be tolerant to minor formatting variations.
+
+---
+
+## Parsing requirements
+
+Build intelligent parser to:
+
+### Detect request boundaries
+
+Start a new request when:
+
+* "Request:" appears
+* OR new Endpoint/URL encountered after prior request complete
+
+Support multiple requests in one file.
+
+---
+
+## Extract:
+
+Per request capture:
+
+* URL
+* Method
+* Headers (key:value pairs under Headers section)
+* Body (raw multi-line content under Body/Payload section)
+* If no Body for GET, keep null
+
+---
+
+## Smart body handling
+
+Body may span multiple lines.
+
+Parser should preserve raw body until next recognized section or next request boundary.
+
+Do not corrupt JSON formatting.
+
+---
+
+## Request naming
+
+Auto-generate request names:
+
+```text id="4分快三4"
+Request1_HHMMSS
+Request2_HHMMSS
+```
+
+Use timestamp/random suffix so names are unique.
+
+No two generated requests should collide.
+
+---
+
+## Populate behavior
+
+Important:
+If user already has existing requests in API Studio:
+
+* Do NOT overwrite existing requests
+* Do NOT clear existing requests
+
+Use existing **+ New Request** functionality programmatically.
+
+Append parsed requests one after another as newly added requests.
+
+Reuse existing request model and request creation logic.
+
+---
+
+## Mapping into API Studio
+
+Populate parsed values into same fields a manually created request uses:
+
+* method dropdown
+* URL field
+* header section
+* body editor
+
+Requests should appear in UI exactly as if user created them manually.
+
+---
+
+## Validation
+
+If parser finds:
+
+* no valid requests
+* missing URL in request block
+
+show actionable error.
+
+Example:
+
+```text id="5分快三5"
+No valid requests found in uploaded payload.
+Ensure payload uses Key: Value format (Endpoint:, Method:, Headers:, Body:).
+```
+
+---
+
+## Important parser behavior
+
+Prefer resilient parsing over rigid parsing.
+
+If unknown sections appear, ignore them unless they help parsing.
+
+Focus on extracting usable requests, not perfect document interpretation.
+
+---
+
+## Architecture
+
+Implement parser as reusable backend module (not UI-only parsing), so same parser can later be extended for:
+
+* Confluence ingestion
+* JIRA ingestion
+
+Design with future source adapters in mind.
+
+---
+
+## Deliverable
+
+User flow:
+
+1. Click Upload Payload
+2. Upload text file
+3. Parser extracts requests
+4. Requests auto-added into API Studio via +New Request logic
+5. User reviews, adds certificate if needed, and runs manually
+
+No execution in this feature.
