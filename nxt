@@ -1,0 +1,136 @@
+Review the repository and propose the best implementation approach for supporting advanced request-processing pipelines for complex API scenarios on /apibuilder
+
+## Goal
+Extend API script builder from a request builder into a Flow Designer / Request Pipeline capable of supporting complex enterprise request flows while reusing as much of existing code as possible.
+
+## Requirement
+Today API script builder already supports:
+* request builder
+* certificate selection
+* proxy enable/disable
+* request execution
+* variable extraction/correlation
+* sequential requests
+* script generation
+
+Need to extend this with a step-based flow model for requests.
+
+## Proposed model to evaluate
+Support an ordered request pipeline consisting of:
+### 1. Transport Setup
+Fixed transport-level settings before request:
+* Use Certificate (existing)
+* Enable Proxy (existing)
+* TLS/SSL settings (reuse existing where possible)
+These are configuration steps.
+
+---
+
+### 2. Pre-Request Pipeline (ordered steps)
+Allow defining ordered function steps before request is sent.
+Examples:
+* Generate UUID
+* Sign payload
+* Encode request body
+* Build authorization header
+* Add computed headers
+* Set variables
+
+Concept:
+Each step should have:
+Function name
+Inputs
+Outputs (variables available to later steps or request)
+
+Example:
+
+Function: HMACSign
+Input: request.body, signingKey
+Output: signature
+
+Then header can reference {{signature}}
+
+Need you to review how this can reuse existing variable substitution model.
+
+---
+
+### 3. Request Execution
+
+Existing API request builder remains source of truth for:
+
+* method
+* url
+* headers
+* body
+
+Pipeline should feed into existing request execution flow.
+
+---
+
+### 4. Post-Response Pipeline (ordered steps)
+
+After response:
+allow ordered function steps such as:
+
+* Decode response
+* Decrypt response
+* Parse OAuth token
+* Extract variables
+* Transform response
+
+Outputs should flow into existing request context and be reusable by later requests.
+
+Example:
+
+DecodeResponse(response.body) -> decodedBody
+ParseOAuth(decodedBody) -> access_token
+
+---
+
+## User experience concept
+
+Evaluate whether a new “Flow Designer” tab can support:
+
+Transport
+↓
+Pre-Request Steps
+↓
+Request
+↓
+Post-Response Steps
+
+Ordered steps with drag/drop sequencing.
+
+Review best UI/architecture fit using existing code structure.
+
+---
+
+## Important constraint
+Do NOT assume arbitrary user code execution.
+Assume controlled built-in function registry only.
+Users configure functions.
+Users do not write runtime code.
+Review best way to support that.
+
+---
+
+## Helper Function Assumption
+
+For this planning exercise, assume required helper functions
+(encryption, encoding, signing, parsing, UUID generation, etc.)
+will be provided as reference implementations and equivalent Python
+functions can be developed and plugged into the pipeline.
+
+---
+
+## Key question
+Review whether the following stable route can be encoded generically:
+Load certificate
+Apply proxy
+Run pre-request helper steps
+Substitute variables
+Send request
+Run post-response helper steps
+Save outputs for next requests
+
+If yes, propose how.
