@@ -1,0 +1,8 @@
+Generated Java code is assuming modern JAX-RS / Apache XML APIs.
+
+Need to make generated Java compatible with LoadRunner Java Vuser runtime.
+
+Fixes:
+1. Replace response.readEntity(String.class) with response.getEntity(String.class)
+2. Replace XMLCipher.createSecretKey() usage with explicit AES SecretKey generation using KeyGenerator
+3. Review generated Java against LR-supported Jersey/XML libraries only
