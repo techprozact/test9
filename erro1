@@ -1,0 +1,12 @@
+Before parser/decrypt pipeline step execution, validate response format matches expected parser type.
+Example:
+XML parser only if content-type/body indicates XML
+JSON parser only if valid JSON
+Otherwise fail clearly.
+
+Wrap each pipeline step with try/catch and clear step-level logging.
+
+If function expects input payload and gets null/empty, Fail early.
+Example: decrypt_xml requires non-empty XML payload
+
+Fail-fast validation for cert/proxy/runtime config
