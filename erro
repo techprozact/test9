@@ -1,0 +1,10 @@
+Auth request returned HTTP 411 (Bad Request / Length Required).
+
+Current generated Java incorrectly assumes success and tries XML parsing on HTML error response, causing SAXParseException.
+
+Fixes required:
+
+1. Validate HTTP status before parsing/decrypting response.
+2. Mark LR transaction FAIL for non-200 responses.
+3. Log raw response body for failures.
+4. Investigate auth request construction for missing Content-Length / malformed payload / wrong content type.
