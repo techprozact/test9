@@ -1,0 +1,63 @@
+Improve the existing Record → Correlation → Replay engine. Do NOT redesign the overall product or add business-flow intelligence yet.
+
+Focus only on making dynamic-value correlation and replay bulletproof.
+
+### 1. Dynamic value correlation
+- Process captured requests in recorded order.
+- When a dynamic value is identified in a request, determine which earlier response produced that value.
+- Maintain an explicit dependency mapping:
+
+  `request X response → extracted variable → consumed by request Y`
+
+- Store this mapping based on the **first valid occurrence/producer** of the value.
+- Never blindly correlate the same value against unrelated responses.
+- Support multiple consumers of the same variable.
+- Preserve LB/RB/extraction rules with the variable.
+- During replay, execute the producer request first, extract the fresh value from its response, and substitute it into all dependent requests.
+- Log: producer request, response location, extracted value/variable, and consumer requests.
+
+### 2. Correlation validation
+Before replay, validate that every generated variable has:
+- a valid producer response
+- valid extraction boundaries/rule
+- at least one consumer
+- no unresolved dependency
+
+Flag unresolved correlations clearly instead of silently generating a broken script.
+
+### 3. Request filtering
+By default exclude from execution/correlation requests that are clearly non-business/static resources, such as:
+- CSS
+- JS/static bundles
+- images/icons/fonts
+- source maps
+- favicon
+- static media
+- analytics/telemetry where identifiable
+
+Keep API/XHR/fetch/document requests unless there is strong evidence they are irrelevant.
+
+Make filtering configurable so requests can be restored if required.
+
+### 4. Replay behavior
+- Do not assume every captured request must succeed for the flow to be valid.
+- Replay only retained requests in dependency-safe order.
+- A failed ignored/static request must never affect flow status.
+- A retained request failure must clearly identify whether it has downstream dependencies.
+
+### 5. Diagnostics
+Add a correlation/replay report showing:
+
+`Request → Producer Response → Variable → Consumers → Replay Result`
+
+Also log unresolved variables, missing producers, failed extraction, substitution failures, and failed retained requests.
+
+### Goal
+
+For:
+
+`Record → Correlate → Generate → Replay`
+
+the generated script must reproduce the recorded flow using fresh dynamic values from the replay responses, with deterministic producer → variable → consumer relationships.
+
+Do not work on advanced business-transaction detection, parallelism, UI validation, or performance optimization yet. First make correlation, dependency mapping, filtering, and replay deterministic and reliable.
