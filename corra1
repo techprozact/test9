@@ -1,0 +1,17 @@
+Good. Before we consider correlation/replay complete, do one final hardening pass focused ONLY on producer correctness.
+
+For every correlated variable, prove that the selected producer is the correct producer, not merely the first response containing the same value.
+
+Validate:
+- exact recorded value occurrence in producer response
+- extraction rule reproduces the recorded value
+- producer occurs before every consumer
+- producer → variable → all consumers dependency is deterministic
+- reject/flag ambiguous producers rather than guessing
+- ensure replay extracts a fresh value from the producer and never sends the recorded value
+- test values appearing in multiple responses, nested JSON, headers, cookies, URL path/matrix params, query params and request bodies
+- test long tokens embedded inside larger strings
+
+Also add a final automated test that deliberately creates an ambiguous/multiple-candidate producer scenario and verifies that the engine does not silently choose the wrong producer.
+
+Do not work on business-flow detection, parallelism, UI validation or other features yet.
