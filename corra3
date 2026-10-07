@@ -1,0 +1,25 @@
+The 41-request login recording exposed an important issue: HTTP replay is not equivalent to browser/UI replay.
+
+Do NOT treat each HAR request as a UI step.
+
+Implement a UI checkpoint model tied to recorded UI actions:
+
+UI action → network burst → application settle → UI checkpoint → snapshot.
+
+For browser replay:
+- replay the recorded UI actions in the browser/CDP, not all 41 HTTP requests sequentially
+- allow the browser to generate its normal network requests
+- correlate/intercept dynamic values where required
+- after each meaningful UI action, wait for application state to settle using deterministic conditions, not fixed sleeps
+- support URL/navigation change, document ready, DOM selector/text/state, and network-idle/quiet conditions
+- capture the final screenshot only after the checkpoint condition is satisfied
+
+During recording, store a checkpoint signature for each meaningful screen:
+URL/pattern + relevant DOM evidence + optional network completion evidence + snapshot.
+
+During replay, wait until the checkpoint is reached, then capture the replay snapshot and report PASS/FAIL.
+
+Keep HTTP performance replay separate from browser/UI replay. Do not try to reconstruct a browser screen by sequentially sending every HAR request.
+
+First implement this for the Login flow and prove:
+Click Login → all browser activity settles → Dashboard checkpoint detected → final Dashboard snapshot captured.
